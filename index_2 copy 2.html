@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Augustus Timeline</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: monospace;
+        }
+        
+        @keyframes slide-in-left {
+            from {
+                transform: translateX(100%);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .animate-slide-in-left {
+            animation: slide-in-left 1.2s ease-out forwards;
+        }
+        
+        @keyframes terminal-glow {
+            0%, 100% { text-shadow: 0 0 5px currentColor; }
+            50% { text-shadow: 0 0 10px currentColor; }
+        }
+        
+        .text-green-400 {
+            animation: terminal-glow 2s ease-in-out infinite;
+        }
+        
+        [data-timeline="years"]::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        [data-timeline="years"]::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        
+        [data-timeline="years"]::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        
+        [data-timeline="years"]::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Responsive*/
+        .augustus-ascii {
+            font-size: clamp(6px, 1.5vw, 12px);
+            line-height: 1;
+        }
+
+        @media (max-width: 768px) {
+            .augustus-ascii {
+                font-size: clamp(3px, 2vw, 8px);
+            }
+            
+            .speech-bubble {
+                max-width: 90vw !important;
+                font-size: 14px !important;
+                padding: 1rem !important;
+            }
+            
+            .timeline-years {
+                height: 5rem !important;
+                padding: 0.5rem !important;
+            }
+            
+            .console-bar {
+                height: 8rem !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .augustus-ascii {
+                font-size: clamp(2px, 3vw, 6px);
+            }
+            
+            .speech-bubble {
+                font-size: 12px !important;
+                padding: 0.75rem !important;
+            }
+            
+            .timeline-years {
+                height: 4rem !important;
+                padding: 0.25rem !important;
+            }
+            
+            .console-bar {
+                height: 6rem !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const AugustusTerminal = () => {
+
+            const DEV_SPEED_MULTIPLIER = 0.5;
+            
+            const [currentStep, setCurrentStep] = useState(0);
+            const [showFullAugustus, setShowFullAugustus] = useState(false);
+            const [zoomToFace, setZoomToFace] = useState(false);
+            const [showTimeline, setShowTimeline] = useState(false);
+            const [currentText, setCurrentText] = useState('');
+            const [showCursor, setShowCursor] = useState(true);
+            const [yearsShown, setYearsShown] = useState([]);
+            const [showTerminalLoading, setShowTerminalLoading] = useState(true);
+            const [typedCommand, setTypedCommand] = useState('');
+
+            const timeline = [
+            { year: '753 v.Chr.', keyword: 'Gründung', text: 'Salve! Ich bin Augustus. Hier beginnt unsere Geschichte - Romulus gründet Rom am Tiber!' },
+            { year: '509 v.Chr.', keyword: 'Republik', text: 'Lucius Junius Brutus vertreibt Tarquinius Superbus. Die römische Republik entsteht!' },
+            { year: '494 v.Chr.', keyword: 'Plebs', text: 'Erste Secessio plebis - die Plebejer erkämpfen sich politische Rechte.' },
+            { year: '390 v.Chr.', keyword: 'Gallier', text: 'Die Gallier unter Brennus erobern und plündern Rom. Ein schwarzer Tag!' },
+            { year: '264 v.Chr.', keyword: 'Sizilien', text: 'Der Erste Punische Krieg beginnt. Rom kämpft gegen Karthago um Sizilien.' },
+            { year: '218 v.Chr.', keyword: 'Hannibal', text: 'Hannibal überquert die Alpen mit Elefanten. Der Zweite Punische Krieg beginnt!' },
+            { year: '216 v.Chr.', keyword: 'Cannae', text: 'Katastrophe bei Cannae! Hannibal vernichtet fast das gesamte römische Heer.' },
+            { year: '202 v.Chr.', keyword: 'Zama', text: 'Scipio Africanus besiegt Hannibal bei Zama. Karthago ist besiegt!' },
+            { year: '149 v.Chr.', keyword: 'Cato', text: 'Dritter Punischer Krieg - Cato fordert: "Carthago delenda est!"' },
+            { year: '146 v.Chr.', keyword: 'Zerstörung', text: 'Karthago wird zerstört. Auch Korinth fällt - Rom herrscht über das Mittelmeer.' },
+            { year: '133 v.Chr.', keyword: 'Gracchus', text: 'Tiberius Gracchus versucht Landreformen. Er wird ermordet - die Republik wankt.' },
+            { year: '107 v.Chr.', keyword: 'Marius', text: 'Marius reformiert das Heer. Berufssoldaten statt Bürgermiliz.' },
+            { year: '91 v.Chr.', keyword: 'Bündnis', text: 'Bundesgenossenkrieg - Italiker kämpfen um römisches Bürgerrecht.' },
+            { year: '88 v.Chr.', keyword: 'Sulla', text: 'Sulla marschiert gegen Rom. Bürgerkrieg zwischen Marius und Sulla.' },
+            { year: '73 v.Chr.', keyword: 'Spartacus', text: 'Spartacus-Aufstand! Gladiatoren und Sklaven rebellieren gegen Rom.' },
+            { year: '60 v.Chr.', keyword: 'Triumvirat', text: 'Erstes Triumvirat: Pompeius, Crassus und mein Adoptivvater Caesar.' },
+            { year: '58 v.Chr.', keyword: 'Gallien', text: 'Caesar erobert Gallien. "Gallia est omnis divisa in partes tres..."' },
+            { year: '53 v.Chr.', keyword: 'Carrhae', text: 'Crassus stirbt bei Carrhae gegen die Parther. Das Triumvirat zerbricht.' },
+            { year: '49 v.Chr.', keyword: 'Rubikon', text: 'Caesar überschreitet den Rubikon. "Alea iacta est!" - der Bürgerkrieg beginnt.' },
+            { year: '48 v.Chr.', keyword: 'Pharsalus', text: 'Caesar besiegt Pompeius bei Pharsalus. Pompeius flieht nach Ägypten.' },
+            { year: '44 v.Chr.', keyword: 'Iden', text: 'Caesar wird an den Iden des März ermordet. "Et tu, Brute?" Ein dunkler Tag...' },
+            { year: '43 v.Chr.', keyword: 'Rache', text: 'Zweites Triumvirat: Antonius, Lepidus und ich. Wir rächen Caesar.' },
+            { year: '42 v.Chr.', keyword: 'Philippi', text: 'Schlacht bei Philippi - Brutus und Cassius sind besiegt und tot.' },
+            { year: '31 v.Chr.', keyword: 'Actium', text: 'Ich besiegte Antonius und Kleopatra bei Actium. Die Republik war am Ende.' },
+            { year: '30 v.Chr.', keyword: 'Ägypten', text: 'Ägypten wird römische Provinz. Antonius und Kleopatra sind tot.' },
+            { year: '27 v.Chr.', keyword: 'Augustus', text: 'Der Senat verlieh mir den Titel Augustus. Das Kaiserreich begann!' },
+            { year: '9 n.Chr.', keyword: 'Varus', text: 'Varusschlacht im Teutoburger Wald. "Varus, gib mir meine Legionen zurück!"' },
+            { year: '14 n.Chr.', keyword: 'Tod', text: 'Meine Herrschaft endete hier. Tiberius wird mein Nachfolger.' },
+            { year: '64 n.Chr.', keyword: 'Brand', text: 'Nero lässt Rom brennen. Die Christen werden zu Sündenböcken gemacht.' },
+            { year: '79 n.Chr.', keyword: 'Vesuv', text: 'Der Vesuv bricht aus. Pompeji und Herculaneum werden begraben.' },
+            { year: '80 n.Chr.', keyword: 'Kolosseum', text: 'Das Kolosseum wird eröffnet. "Panem et circenses" für das Volk!' },
+            { year: '98 n.Chr.', keyword: 'Trajan', text: 'Trajan wird Kaiser. Das Reich erreicht seine größte Ausdehnung.' },
+            { year: '117 n.Chr.', keyword: 'Hadrian', text: 'Hadrian wird Kaiser. Der Hadrianswall entsteht in Britannia.' },
+            { year: '161 n.Chr.', keyword: 'Philosoph', text: 'Marcus Aurelius wird Kaiser. Der Philosoph auf dem Thron.' },
+            { year: '212 n.Chr.', keyword: 'Caracalla', text: 'Caracalla verleiht allen freien Reichsbewohnern das Bürgerrecht.' },
+            { year: '235 n.Chr.', keyword: 'Chaos', text: 'Soldatenkaiserzeit beginnt. 50 Jahre Chaos und Bürgerkrieg.' },
+            { year: '285 n.Chr.', keyword: 'Tetrarchie', text: 'Diokletian teilt das Reich. Tetrarchie - vier Kaiser regieren.' },
+            { year: '312 n.Chr.', keyword: 'Konstantin', text: 'Konstantin siegt an der Milvischen Brücke. "In hoc signo vinces!"' },
+            { year: '313 n.Chr.', keyword: 'Toleranz', text: 'Toleranzedikt von Mailand - das Christentum wird legal.' },
+            { year: '330 n.Chr.', keyword: 'Byzanz', text: 'Konstantinopel wird gegründet. "Nova Roma" am Bosporus.' },
+            { year: '378 n.Chr.', keyword: 'Adrianopel', text: 'Schlacht von Adrianopel - Kaiser Valens stirbt gegen die Goten.' },
+            { year: '410 n.Chr.', keyword: 'Alarich', text: 'Alarich plündert Rom. Die Ewige Stadt ist nicht mehr ewig.' },
+            { year: '455 n.Chr.', keyword: 'Vandalen', text: 'Vandalen plündern Rom. Das Westreich zerfällt.' },
+            { year: '476 n.Chr.', keyword: 'Ende', text: 'Odoaker setzt Romulus Augustulus ab. Das Weströmische Reich endet.' },
+            { year: '1453 n.Chr.', keyword: 'Osmanen', text: 'Konstantinopel fällt an die Osmanen. Das letzte Erbe Roms stirbt.' },
+            { year: '', keyword: 'Ewigkeit', text: 'Aber die Idee von Rom... sie lebt ewig weiter. "Urbs Aeterna!"' }
+        ];
+
+            const augustusFullAscii = `                                                                                                                                                                                                                                                                                                                                                                                                               
+                                                     . .:---------=*###***++=----::::----=--=-...                                                                                                                                                                                                                                                                                                               
+                                                      ...:--------=+*####**++==--:-:------===:...                                                                                                                                                                                                                                                                                                               
+                                                         .:------:-=+**###***+++==-------===*+ ..                                                                                                                                                                                                                                                                                                               
+                                                       .  .::----::-==++***##***++===-=====+*#:  . .                                                                                                                             .   ....      ...                                                                                                                                                              
+                                                            .---------==+*##******+====-=++**#+..                                                                                                                                   ...... ....:.. . ....                                                                                                                                                       
+                                                           . .:----------=+********+-=++++*##**- ...                                                                                                                               ..:-::-=+*%%%%##=:...                                                                                                                                                        
+                                                            .. .------------==+***==+++++*###*#+.  .                                                                                                                  .. .... ....=*#####%#*#######*###+--:...... .                                                                                                                                             
+                                                           ...  .:-------------=+=+==++*+**###*+. ..                                                                                                                 ..  .....-+******#%#*=+*+#*####*########+:..  .                                                                                                                                            
+                                                                  .:-------:---======+++***###**- . .                                                                                                                 .....-=+=++-=***--+*#*-:+#*#%%%#%%%%####**+-...                                                                                                                                           
+                                                                 ...::----------======+****####*= .                                                                                                               .   . .=**##*#*+:=*####%##+.-##*#%%*%%%#*%@%**%##=... ..                                                                                                                                      
+                                                                 ...:::::------------==+****###**..                                                                                                             .    ...+**##*#**#+*####****-.-*****+-**##=*%%#*%%#%*..... ..                                                                                                                                   
+                                                                  ..::::::::-:-------===+***####*-. .  .                                                                                                          ...:+****++****+=+=====---::-=+==+--=+-*+:++##*#%%%%+:.....                                                                                                                                   
+                                                                  .:::::::-----------===+*#*####**..                                                                                                          .    .++**+---==+=::-==-==--::--:::--:.::--:+--=*#*=*####%#-...                                                                                                                                   
+                                                                  .::::::::-----------==+*#######*-.                                                                                                            ..:*=+=-==--:--:..:--:...:-=-:--:---:.::-::=--=***==*##%%#*:. . .                                                                                                                               
+                                                                ...:::::::::-------=====+*#######*..                                                                                                          . .=+-=--*=:::--..::-:.-*#+=-:::::*#%###*=-=--=.-+++::*#*%%##:...                                                                                                                                
+                                                                 . .::::::::::-------====+**######*-.                                                                                                          .-==--++:=+-:::-:..:+######***##%%%#####***##%%##*++*.:=**####-..                                                                                                                                
+                                                                 .  .:::::::::--------====+***#####+.  ..                                                                                                   . .:----:--::=-:..::---=**####################***########=:.=+**##- .                                                                                                                               
+                                                                 .   ::::::::::::-------===+***#####-..  .                                                                                                   .:-----:-=:.--::-==+*##################%##%%#######**#**###=+***#+.                                                                                                                                
+                                                                  .. .::::::::::::-------===+**####**. ..                                                                                                  . .-:--:--:--.-:-=+****#####%%%%%######%%%%%@@@%%%#####*#**+***##**#:                                                                                                                                
+                                                                    ..::::::::::::------=====+**#####=.. .                                                                                                . .:-::-::--:-:--=++****#########%%*###*#########%%%%%####*+=-+*++***=                                                                                                                                
+                                                                  .  ..::::::::::::------=-==++****##*: .                                                                                                 ...:::-:::---:---===+***********####*##*********###%%%###*+++--==-+==-.                                                                                                                               
+                                                                    . .::::::::::--:--------=++*****##*...                                                                                                 ..:::::::--:-:--+*######*++++*********+--======++*#%%%##**++-::-::*+:.                                                                                                                               
+                                                                      .::::::::::::::-------===+***####+. .                                                                                                .:::::::---:-:-=++****==---------=+**#*-:::-::::::----+*#**+-:::-:=+:.                  .      .                                                                                                     
+                                                                      .::::::::::::::--------==++**#####=..                                                                                                .:::::::::::----===---::::...:----=#%%#=:-::::::-=-:----=***+:::-:===...                 .  ...  .                                                                                                   
+                                                                  . . .::::::::::::::--------==++**######= ..                                                                                              .::::::--:::::----=--:::::::::::::=#%%#=-::::----::-::---+***====--==:..                  ....... .                                                                                                  
+                                                                  . .. ::::::::::::-::-------==++***######+..                                                                                              ..::::--:-:::-------:------::::::-=##%%#+-::---:--=+--=**+**###+==+++...  .              ...:---==:.                                                                                                 
+                                                                       .::::::::::::::-------==++****######+... .                                                                                           .:---:------------:::---------=+=-*#%%#%%*+++===+*%%%%%%#**##%+++*###*-....           . ::====**+=..   .                                                                                            
+                                                                       .::::::::::::::::------==++**#########...                                                                                          . .::-----::-----::---::::---==+*+=-+#%%###%%%##%%%%%@@@%%##**##*+*+=::.::.               .:---+***+:...                                                                                              
+                                                                        .::::::::::::-::------==++***########*:..                                                                                            .:::-::----=----=*******###*+==--=*%%%%%%%%%%%%%%%%%%##******+=-:.:.:.:..             ...::-+*+*+.   ..                                                                                            
+                                                                        .::::::::::::::::------=++***#########*: ....                                                                                      ..::.:-::-----==+*#%%%%%%%%%%*===-=*#%@%%%%%##%%%##*********+*+=-::.::..:.                ..:-=+*++:. . .                                                                                            
+                                                                       ..::::::::::::::::-----==+++***#########*:.   .                                                                                    .::::--:::------===+**#%%%%%%%#+---+##%%%%%######%%#*+++++***++==:..:=-.....                .:-=++**+.. .                                                                                             
+                                                                        .:::::::::::::::::-----===+++***########*...                                                                                      :::::::-------------=-=+*##%%%#+-=--=*#####%#***###**+====++++++#=..:==:-..                 .:===+***+:.                                                                                              
+                                                                        ..:::::::::::::::::-----===++****########+.                                                                                      .::::::::----------------=*##***=-----------=*+++**###*++++=+****+-.:=+==...              . .::-==++***+...                                                                                            
+                                                                       . .::::::::::::::::::-----==+++****########-..                                                                                     .:.:::::..:-------==----==+*****--::::----:-##*+***##****++****++*=**==....               . .::-==+****-..                                                                                            
+                                                                         ..::::::::::::::::-------==+=+****########:..                                                                                     ...::::..:--------------===*##*::::::::-+*%@@@%#**###****+*****+*#+*+... .              . ..:.:-==++**-..                                                                                            
+                                                                        . .:::::::::::::::::-------==++******######+..                                                                                   ....:.:-:...:-------------==*###+=-:::--=#%%%%%%%%%#####*******++##*#= ..                 . . .:::::-=--=:.                                                                                            
+                                                                      ..  .::::::::::::::--:--------==++******####*#-                                                                                        ....:::::-------==--===++++===------====*#+==**#*###*******-::--....                 .    ..::-=+**+-..                                                                                            
+                                                                       . . .:::::::::::::------------==++*****#######:                                                                                     .  ..::.:::--=----=--=======-----::::::=++=-:::-=+*###******+...... .                     .. .:::=+***:.                                                                                             
+                                                                       .   .::::::::::::--------------==++*****######*..                                                                                  ..  .. .:-----=------==---==---:----=+****###%%*+++**********-....  . .                  ..    ..:-=+**-.                                                                                             
+                                                                          . .:::::::::::-:-----------==-==+*****######+. . .                                                                                    ....:---==-------=--======-===-----===*#%%###******+++=..                                 ..:=++**..                                                                                            
+                                                                        .  . .::::::::::::------------=====++***#######:.  .                                                                                          .-=------------=+=------:-+***#%%#######****++==:.                                   .:-=+**=.                                                                                            
+                                                                          . ..::::::::::::-------------=====++***######-...                                                                                        ....:-====---=-==-=+==---=+#####%%%@@@%%##***+++==:... .                              . ..-=++*+:                                                                                            
+                                                                              .:::::::::::-------------======++***#####+.. ..   .                                                                                    ..:---======-------=--=++********##%##***++====-.  ..                              . . .:-=+**-... .                                                                                       
+                                                                               .:::::::::::-------------====+++***######*:.......                                                                                     .::---==========------===========++*++===-===**.  ..                               .  .:-=++*+..   .                                                                                      
+                                                                              . .::::::-::---------------====+++***######%%##*=:.  .....                                                                              .:::-----==============-------::-----=======+**:.                                  . . .:=++**-. .                                                                                        
+                                                                              .  .---:::-:::--------------====+++****##%%%%%%%%####+-:. . .  .                                                                        .:-::-------=======+=======================+##+.                                    .  .:-=++*+.  ..                                                                                      
+                                                                             . .. .:--:::::----------------====++++***##%%%%%%%%%######*-... .                                                                        .::::::--:------===-=================--===+###=  .  .                                  ..-=++**:...                                                                                       
+                                                                              .  . .:--:::------------------=====+++**#%%%%%%%%@%%%%%#####*=........ .    ......                                                     ..::::::::::::::---===============-----===++***-.    .                                   .:-=+**=.                                                                                         
+                                                                                   ..----:------------------=======++**#%%%%%%%%%%%%%########*=.:-.. ... ...:--::.... . .                                            ..::::::::::-----:::::----------------===*****+.                                         .:-=++**: ..                                                                                      
+                                                                                   ...:---------------------=======++*##%#%%%%%%%%%%%%%####**###*-:-+*+:::++===---==++-:....                                          .::::::::::::----------:::::::----====+******=                                           .:-++**=...                                                                                      
+                                                                                    ...:----------------------=====+**######%%%%%%%%%%%%####**####*+--+=::+-+:-----=+++++:..                                          .::::---:::::::--------::::::---=====+******+:                                          ..:-=+***..                                                                                       
+                                                                                     ...:----------------------====+**##########################***##*=:=*####***+===++++*=..                                      . ..::::----::::::::-:::-----::::-====+*+**#**+=..                                          ..:=++**=..                                                                                      
+                                                                                        .:----------------------==++***##########*****#############*#*##*+#%%%%%##+====+*+*+........  ....    .        ..      .    ..::::::-----:::::::::-:::---:::-===+****#*#*+-.                                           ..:-=+***:                                                                                       
+                                                                                      .. .:-------::---------------==+************+++*********##########*#**%#%%%%##+--===+++-. .  ........ ......    . ..        ..::::-------------:::::::::::--:--==++***##***+:.                                            ..:=++**=.                                                                                      
+                                                                                    .  .  .--------::----------------===+++++=+++=====++*******###############%%%%###+--===-++*=-+*###%%#+++###***++==::.       ..:--::::---------------------------=++++***##***+:.                                          .  .:-=+**+.                                                                                      
+                                                                                           .:-:--::---------------------=====---------=====++*****###########*%%%@%%##*-:=-*=-++==*****#****####**+*#+++**. ...:------::::-------------------------=++*****##****=. .   .                                      . ..-=+***- .  .                                                                                 
+                                                                                         ....:--::::::----------------------:--:--------=-=====+****##*#*###%*#%%%%%###+-=--==*+*=-==+##****#####%%###+-=+*------==-----:::-------=--------------=+=+++++*##****+=..   ...                                    .   .:-++**+ .                                                                                    
+                                                                                           . ..-----:::::--------------------::-=-----------=====+******#####%*%%%%%###*-+*.===-+==:---=#####%%#*#######%%##*++++++++===--:-----===------=-------======+*##******+. .  .........                                . .:-=++**: . .                                                                                 
+                                                                                               .:-----::--------------------------------------=====++++***####*##%#%##%*-=+*==---=**#*=-=###########%%%%%%%###*++++***+++=--=======------===----======+**********+=--:-=*#*++-:........  .. .. ...               ...-=++*#=. . .                                                                                
+                                                                                               ...:----------------------------------------------======++*****+*#####%#+-=+=++*=::-**#%*-=###*#%%###%%%%%###*#*#*****+++***++======------=====+======+******#***+*=---:=*++*****###*=-:.  .    . ..               ..:-=+***...                                                                                  
+                                                                                               . . ..-------------------------------------------------===+****+=*####%#+====+==+=:::-+##=:=##*####%#+**#**=#%####*++********+=========----+***+++==+**##***#******#*-----=*#*=+*#%#*+***#*+-:.. ..             . . .:-=++**=. .                                                                                 
+                                                                                                     .:----------------------------------------------::-=++*++-=*#*+%%#++*+=+-+==#=::-#%*:-*##****+*%#%%%%%%**#%###+-+*##****++++**+=====++*#*#*+++**#%#####**##*####*-::--+#=*+=****####*=*#+.. .                  .:=++***.. .                                                                                
+                                                                                                     . .:-----------------------------------------::::---===++-+*#++#%#===+===-++*##::*%%+:-#%%###**+++*%%%%%%**####*---+*#**********##%%%#%%%####**#%%######*#####%%#***=::+%#**==##*#####*+-.. .                  .:-=+**#-...                                                                                
+                                                                                                      .. .:-----------------------------------=---:::------==-:+**-=+*+-**-=++--+####==#%#=:..:-----*%#%%%%%%%%%%#####%#=:--+*###%%##%#%%%%%%%%%%####%%#########%%%%%#**#*+:-*%%%#+-*######*#=..  .  .               .-=++***...                                                                                
+                                                                                                     .. .. .:--::::-----------------------======-:-----------.:+**:-+*=-==*+::::::-*##+#%%#=:::.....:+##%#**+==*#######%%%#=:::-++**###%%######*++***######%%%%%%%%%#*****=:.=*%%%#+*#*#%#=+###+:.......             .:-=++*#-..                                                                                
+                                                                                                             ..----:::------::----------=======---====------:.:=*+:-++--=--**#*=::::=#*##%%%%%##**+-:.-+##*=:++=+*###*#%%%%%%%%*=+**--=***+====+-:==+===*###%####****#*==**=::=#%%#*##%%%%+:=*####**++=-.  .. .. ......-=++**+..                                                                                
+                                                                                                           .  ...:----:----------------=======---======----::.:===:=++:-=-=+*+**##*=::++#%%%%%%%%%%*+:..:-+**+***+=-=*#%%%%%%#**#*:---==-:......:--+**+=.:::-*##*#*+=-+#####*-:=##%#*#%%%%%#+--*##*---=+**=.... ....  .:==+***:.                                                                                
+                                                                                                             .  ....:--------------------====---=+++=+=---::..--=---+-:-:--+=+==*####=.=#%%%%%%%%%%%##+-:.......:-**#%%%%%%#*+-:-.=#+::::-::....::::=+*+...:.:-+**+*%%%%%#####+.-+%#*==+**%%#*#*+++*=++**+++++=-:.   ...-=+***=.                                                                                
+                                                                                                                         .                                      .   . ..:---:::::::::----==++++=--=##-------------====++++++***++++++++=:::=+.:::-=++=:::-=+++++**##*###*#*####*+=-=*+-+##**#**#####%####**+---::-----===+*++++-==-=*###*-=+*####:..                                                            `;
+
+
+            useEffect(() => {
+
+                const command = './historia_romana.exe';
+                let i = 0;
+                
+                const typeCommand = setInterval(() => {
+                    if (i <= command.length) {
+                        setTypedCommand(command.slice(0, i));
+                        i++;
+                    } else {
+                        clearInterval(typeCommand);
+                        
+                        setTimeout(() => {
+                            setShowTerminalLoading(false);
+                            setShowFullAugustus(true);
+                            
+                            // Zoom
+                            setTimeout(() => {
+                                setZoomToFace(true);
+                            }, 1500);
+                            
+                            // Timeline
+                            setTimeout(() => {
+                                setShowFullAugustus(false);
+                                setShowTimeline(true);
+                            }, 3000 * DEV_SPEED_MULTIPLIER);
+                        }, 1000 * DEV_SPEED_MULTIPLIER);
+                    }
+                }, 100 * DEV_SPEED_MULTIPLIER);
+
+                return () => clearInterval(typeCommand);
+            }, []);
+
+            // Timeline Logic
+            useEffect(() => {
+                if (showTimeline && currentStep < timeline.length) {
+                    const timer = setTimeout(() => {
+                        setYearsShown(prev => [...prev, timeline[currentStep].year]);
+                        
+                        const text = timeline[currentStep].text;
+                        let i = 0;
+                        setCurrentText('');
+                        
+                        const typeWriter = setInterval(() => {
+                            if (i < text.length) {
+                                setCurrentText(text.slice(0, i + 1));
+                                i++;
+                            } else {
+                                clearInterval(typeWriter);
+                                setTimeout(() => {
+                                    if (currentStep < timeline.length - 1) {
+                                        setCurrentStep(currentStep + 1);
+                                    }
+                                }, 3000 * DEV_SPEED_MULTIPLIER);
+                            }
+                        }, 50 * DEV_SPEED_MULTIPLIER);
+
+                        return () => clearInterval(typeWriter);
+                    }, currentStep === 0 ? (1000 * DEV_SPEED_MULTIPLIER) : (4000 * DEV_SPEED_MULTIPLIER));
+
+                    return () => clearTimeout(timer);
+                }
+            }, [currentStep, showTimeline]);
+
+            useEffect(() => {
+                if (showTimeline && yearsShown.length > 0) {
+                    const timelineContainer = document.querySelector('[data-timeline="years"]');
+                    if (timelineContainer) {
+                        timelineContainer.scrollLeft = timelineContainer.scrollWidth;
+                    }
+                }
+            }, [yearsShown]);
+
+            useEffect(() => {
+                const cursor = setInterval(() => {
+                    setShowCursor(prev => !prev);
+                }, 500);
+                return () => clearInterval(cursor);
+            }, []);
+
+            const restartAnimation = () => {
+                setCurrentStep(0);
+                setShowTerminalLoading(true);
+                setShowFullAugustus(false);
+                setZoomToFace(false);
+                setShowTimeline(false);
+                setCurrentText('');
+                setYearsShown([]);
+                setTypedCommand('');
+                
+                const command = './historia_romana.exe';
+                let i = 0;
+                
+                const typeCommand = setInterval(() => {
+                    if (i <= command.length) {
+                        setTypedCommand(command.slice(0, i));
+                        i++;
+                    } else {
+                        clearInterval(typeCommand);
+                        
+                        setTimeout(() => {
+                            setShowTerminalLoading(false);
+                            setShowFullAugustus(true);
+                            
+                            setTimeout(() => {
+                                setZoomToFace(true);
+                            }, 1000 * DEV_SPEED_MULTIPLIER);
+                            
+                            setTimeout(() => {
+                                setShowFullAugustus(false);
+                                setShowTimeline(true);
+                            }, 3000 * DEV_SPEED_MULTIPLIER);
+                        }, 1000 * DEV_SPEED_MULTIPLIER);
+                    }
+                }, 100 * DEV_SPEED_MULTIPLIER);
+            };
+
+            return React.createElement('div', {
+                className: "w-full h-screen bg-black text-green-400 font-mono overflow-hidden relative"
+            }, [
+
+                React.createElement('div', {
+                    key: 'header',
+                    className: "bg-gray-800 text-white p-2 text-xs sm:text-sm border-b border-gray-600"
+                }, 
+                    React.createElement('div', {
+                        className: "flex items-center space-x-1 sm:space-x-2"
+                    }, [
+                        React.createElement('div', { key: 'red', className: "w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full" }),
+                        React.createElement('div', { key: 'yellow', className: "w-2 h-2 sm:w-3 sm:h-3 bg-yellow-500 rounded-full" }),
+                        React.createElement('div', { key: 'green', className: "w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full" }),
+                        React.createElement('span', { key: 'title', className: "ml-2 sm:ml-4 truncate" }, 'augustus@roma:~$ historia_romana.exe')
+                    ])
+                ),
+
+                React.createElement('div', {
+                    key: 'consoleBar',
+                    className: "console-bar absolute bottom-0 left-0 right-0 h-32 sm:h-40 bg-black border-t-2 border-green-600 z-30"
+                }, [
+
+                    showTimeline && React.createElement('div', {
+                        key: 'timelineYears',
+                        'data-timeline': 'years',
+                        className: "timeline-years flex items-start justify-start h-20 sm:h-26 px-2 sm:px-4 space-x-3 sm:space-x-6 z-40 relative pt-3 sm:pt-6 mb-4 sm:mb-8",
+                        style: { 
+                            overflowX: 'auto',
+                            scrollBehavior: 'smooth',
+                            whiteSpace: 'nowrap'
+                        }
+                    },
+                        yearsShown.map((year, index) =>
+                            React.createElement('div', {
+                                key: index,
+                                className: "flex flex-col items-center whitespace-nowrap flex-shrink-0",
+                                style: { 
+                                    animationDelay: `${index * 0}s`,
+                                    transform: 'translateX(100%)',
+                                    animation: `slide-in-left 1.2s ease-out ${index * 0}s forwards`
+                                }
+                            }, [
+                                React.createElement('div', {
+                                    key: 'year',
+                                    className: "text-yellow-400 font-bold text-sm sm:text-xl mb-0.5 sm:mb-1"
+                                }, year),
+                                React.createElement('div', {
+                                    key: 'keyword',
+                                    className: "text-cyan-300 text-xs sm:text-sm font-medium"
+                                }, timeline[index]?.keyword || '')
+                            ])
+                        )
+                    ),
+                    
+
+                    React.createElement('div', {
+                        key: 'prompt',
+                        className: "absolute bottom-1 sm:bottom-2 left-2 sm:left-4 right-2 sm:right-4 z-40"
+                    },
+                        React.createElement('div', {
+                            className: "bg-gray-900 border border-green-600 p-1 sm:p-2 rounded text-xs sm:text-sm"
+                        }, [
+                            React.createElement('span', {
+                                key: 'promptText',
+                                className: "text-green-500"
+                            }, 'augustus@roma:~$ '),
+                            React.createElement('span', {
+                                key: 'status',
+                                className: "ml-1 sm:ml-2 text-green-400"
+                            }, [
+
+                                showTerminalLoading ? [
+                                    typedCommand,
+                                    showCursor && React.createElement('span', {
+                                        key: 'cursor',
+                                        className: "text-yellow-400"
+                                    }, '▋')
+                                ] : showTimeline ? [
+                                    currentStep >= timeline.length ? 'Historia completa!' : 'Loading historia...',
+                                    showCursor && React.createElement('span', {
+                                        key: 'cursor2',
+                                        className: "text-yellow-400"
+                                    }, '▋')
+                                ] : null
+                            ])
+                        ])
+                    )
+                ]),
+
+
+                showFullAugustus && React.createElement('div', {
+                    key: 'fullAugustus',
+                    className: "absolute top-8 left-0 right-0 bottom-32 sm:bottom-40 flex items-center justify-center px-2"
+                },
+                    React.createElement('div', {
+                        className: `transition-all duration-3000 ease-out ${
+                            zoomToFace ? 'transform scale-75 sm:scale-150 translate-y-8 sm:translate-y-16' : 'transform scale-50 sm:scale-100'
+                        }`
+                    },
+                        React.createElement('pre', {
+                            className: "augustus-ascii text-amber-400 whitespace-pre overflow-hidden"
+                        }, augustusFullAscii)
+                    )
+                ),
+
+
+                showTimeline && [
+
+                    React.createElement('div', {
+                        key: 'zoomedAugustus',
+                        className: "absolute top-8 left-0 right-0 bottom-32 sm:bottom-40 flex items-center justify-center px-2"
+                    },
+                        React.createElement('div', {
+                            className: "transform scale-75 sm:scale-150 translate-y-8 sm:translate-y-16"
+                        },
+                            React.createElement('pre', {
+                                className: "augustus-ascii text-amber-400 whitespace-pre overflow-hidden"
+                            }, augustusFullAscii)
+                        )
+                    ),
+
+ 
+                    currentText && React.createElement('div', {
+                        key: 'speech',
+                        className: "absolute left-1/2 top-1/4 transform -translate-x-1/2 z-50"
+                    },
+                        React.createElement('div', {
+                            className: "speech-bubble bg-gray-900 border-2 border-green-400 rounded-lg p-3 sm:p-6 relative max-w-xs sm:max-w-2xl mx-2"
+                        }, [
+                            React.createElement('div', {
+                                key: 'arrow1',
+                                className: "absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-4 sm:border-l-8 border-r-4 sm:border-r-8 border-t-4 sm:border-t-8 border-transparent border-t-gray-900"
+                            }),
+                            React.createElement('div', {
+                                key: 'arrow2',
+                                className: "absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-4 sm:border-l-8 border-r-4 sm:border-r-8 border-t-4 sm:border-t-8 border-transparent border-t-green-400"
+                            }),
+                            React.createElement('div', {
+                                key: 'text',
+                                className: "text-green-300 text-sm sm:text-lg leading-relaxed text-center"
+                            }, [
+                                currentText,
+                                showCursor && React.createElement('span', {
+                                    key: 'cursor',
+                                    className: "text-yellow-400"
+                                }, '▋')
+                            ])
+                        ])
+                    )
+                ],
+
+
+                showTimeline && currentStep >= timeline.length && React.createElement('button', {
+                    key: 'restart',
+                    onClick: restartAnimation,
+                    className: "fixed top-2 sm:top-4 right-2 sm:right-4 bg-green-600 text-black px-3 sm:px-6 py-2 sm:py-3 rounded hover:bg-green-500 transition-colors font-bold text-sm sm:text-lg shadow-lg border-2 border-green-400 z-50"
+                }, '↻ restart historia')
+            ]);
+        };
+
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(AugustusTerminal));
+    </script>
+</body>
+</html>

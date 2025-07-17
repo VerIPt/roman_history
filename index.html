@@ -123,8 +123,9 @@
             const [currentText, setCurrentText] = useState('');
             const [showCursor, setShowCursor] = useState(true);
             const [yearsShown, setYearsShown] = useState([]);
-            const [showTerminalLoading, setShowTerminalLoading] = useState(true);
+            const [showTerminalLoading, setShowTerminalLoading] = useState(false);
             const [typedCommand, setTypedCommand] = useState('');
+            const [showStartButton, setShowStartButton] = useState(true);
 
             const timeline = [
             { year: '753 v.Chr.', keyword: 'Gründung', text: 'Salve! Ich bin Augustus. Hier beginnt unsere Geschichte - Romulus gründet Rom am Tiber!' },
@@ -248,37 +249,40 @@
 
 
             useEffect(() => {
-
-                const command = './historia_romana.exe';
-                let i = 0;
-                
-                const typeCommand = setInterval(() => {
-                    if (i <= command.length) {
-                        setTypedCommand(command.slice(0, i));
-                        i++;
-                    } else {
-                        clearInterval(typeCommand);
-                        
-                        setTimeout(() => {
-                            setShowTerminalLoading(false);
-                            setShowFullAugustus(true);
+                if (!showStartButton) {
+                    const command = './historia_romana.exe';
+                    let i = 0;
+                    
+                    setShowTerminalLoading(true);
+                    
+                    const typeCommand = setInterval(() => {
+                        if (i <= command.length) {
+                            setTypedCommand(command.slice(0, i));
+                            i++;
+                        } else {
+                            clearInterval(typeCommand);
                             
-                            // Zoom
                             setTimeout(() => {
-                                setZoomToFace(true);
-                            }, 1500);
-                            
-                            // Timeline
-                            setTimeout(() => {
-                                setShowFullAugustus(false);
-                                setShowTimeline(true);
-                            }, 3000 * DEV_SPEED_MULTIPLIER);
-                        }, 1000 * DEV_SPEED_MULTIPLIER);
-                    }
-                }, 100 * DEV_SPEED_MULTIPLIER);
+                                setShowTerminalLoading(false);
+                                setShowFullAugustus(true);
+                                
+                                // Zoom
+                                setTimeout(() => {
+                                    setZoomToFace(true);
+                                }, 1500);
+                                
+                                // Timeline
+                                setTimeout(() => {
+                                    setShowFullAugustus(false);
+                                    setShowTimeline(true);
+                                }, 3000 * DEV_SPEED_MULTIPLIER);
+                            }, 1000 * DEV_SPEED_MULTIPLIER);
+                        }
+                    }, 100 * DEV_SPEED_MULTIPLIER);
 
-                return () => clearInterval(typeCommand);
-            }, []);
+                    return () => clearInterval(typeCommand);
+                }
+            }, [showStartButton]);
 
             // Timeline Logic
             useEffect(() => {
@@ -329,46 +333,37 @@
 
             const restartAnimation = () => {
                 setCurrentStep(0);
-                setShowTerminalLoading(true);
+                setShowTerminalLoading(false);
                 setShowFullAugustus(false);
                 setZoomToFace(false);
                 setShowTimeline(false);
                 setCurrentText('');
                 setYearsShown([]);
                 setTypedCommand('');
-                
-                const command = './historia_romana.exe';
-                let i = 0;
-                
-                const typeCommand = setInterval(() => {
-                    if (i <= command.length) {
-                        setTypedCommand(command.slice(0, i));
-                        i++;
-                    } else {
-                        clearInterval(typeCommand);
-                        
-                        setTimeout(() => {
-                            setShowTerminalLoading(false);
-                            setShowFullAugustus(true);
-                            
-                            setTimeout(() => {
-                                setZoomToFace(true);
-                            }, 1000 * DEV_SPEED_MULTIPLIER);
-                            
-                            setTimeout(() => {
-                                setShowFullAugustus(false);
-                                setShowTimeline(true);
-                            }, 3000 * DEV_SPEED_MULTIPLIER);
-                        }, 1000 * DEV_SPEED_MULTIPLIER);
-                    }
-                }, 100 * DEV_SPEED_MULTIPLIER);
+                setShowStartButton(true);
+            };
+
+            const startAnimation = () => {
+                setShowStartButton(false);
             };
 
             return React.createElement('div', {
                 className: "w-full h-screen bg-black text-green-400 font-mono overflow-hidden relative"
             }, [
 
-                React.createElement('div', {
+                // Start Button
+                showStartButton && React.createElement('div', {
+                    key: 'startScreen',
+                    className: "absolute inset-0 flex items-center justify-center bg-black z-50"
+                }, 
+                    React.createElement('button', {
+                        onClick: startAnimation,
+                        className: "bg-green-600 text-black px-8 py-4 rounded-lg hover:bg-green-500 transition-colors font-bold text-xl shadow-lg border-2 border-green-400 uppercase tracking-wider"
+                    }, 'Historia Romana Starten')
+                ),
+
+                // Header (nur zeigen wenn nicht Start-Screen)
+                !showStartButton && React.createElement('div', {
                     key: 'header',
                     className: "bg-gray-800 text-white p-2 text-xs sm:text-sm border-b border-gray-600"
                 }, 
@@ -382,7 +377,8 @@
                     ])
                 ),
 
-                React.createElement('div', {
+                // Console Bar (nur zeigen wenn Terminal läuft oder Timeline aktiv)
+                !showStartButton && (showTerminalLoading || showTimeline) && React.createElement('div', {
                     key: 'consoleBar',
                     className: "console-bar absolute bottom-0 left-0 right-0 h-32 sm:h-40 bg-black border-t-2 border-green-600 z-30"
                 }, [
@@ -455,7 +451,8 @@
                 ]),
 
 
-                showFullAugustus && React.createElement('div', {
+                // Augustus Animation (nur zeigen wenn nicht Start-Screen)
+                !showStartButton && showFullAugustus && React.createElement('div', {
                     key: 'fullAugustus',
                     className: "absolute top-8 left-0 right-0 bottom-32 sm:bottom-40 flex items-center justify-center px-2"
                 },
@@ -471,7 +468,8 @@
                 ),
 
 
-                showTimeline && [
+                // Timeline Phase (nur zeigen wenn nicht Start-Screen)
+                !showStartButton && showTimeline && [
 
                     React.createElement('div', {
                         key: 'zoomedAugustus',
@@ -517,7 +515,8 @@
                 ],
 
 
-                showTimeline && currentStep >= timeline.length && React.createElement('button', {
+                // Restart Button (nur zeigen wenn Timeline fertig und nicht Start-Screen)
+                !showStartButton && showTimeline && currentStep >= timeline.length && React.createElement('button', {
                     key: 'restart',
                     onClick: restartAnimation,
                     className: "fixed top-2 sm:top-4 right-2 sm:right-4 bg-green-600 text-black px-3 sm:px-6 py-2 sm:py-3 rounded hover:bg-green-500 transition-colors font-bold text-sm sm:text-lg shadow-lg border-2 border-green-400 z-50"

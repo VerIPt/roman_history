@@ -45,7 +45,6 @@
             }
         }
 
-        /* Glow-Effekt nur für bestimmte Terminal-Elemente, nicht für Info-Texte */
         .terminal-glow {
             animation: terminal-glow 2s ease-in-out infinite;
         }
@@ -67,14 +66,12 @@
             background: #555;
         }
 
-        /* Anti-Flicker für Augustus */
         .augustus-container {
             will-change: transform;
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
             transform: translateZ(0);
             -webkit-transform: translateZ(0);
-            /* Deaktiviere transitions um Flackern zu vermeiden */
             transition: none !important;
         }
 
@@ -82,7 +79,6 @@
         .augustus-ascii {
             font-size: clamp(6px, 1.5vw, 12px);
             line-height: 1;
-            /* Browser-spezifische Optimierungen gegen Flackern */
             will-change: transform;
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
@@ -133,7 +129,6 @@
             }
         }
 
-        /* Slider Styling */
         .slider::-webkit-slider-thumb {
             appearance: none;
             height: 20px;
@@ -152,7 +147,7 @@
             border: none;
         }
 
-        /* Timeline Button Styling */
+
         .timeline-button {
             background: linear-gradient(135deg, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.9));
             border: 1px solid rgba(34, 197, 94, 0.3);
@@ -610,15 +605,15 @@
                                 setShowTerminalLoading(false);
                                 setShowFullAugustus(true);
                                 
-                                // Start intro phase immediately
+
                                 setShowIntroPhase(true);
 
-                                // Zoom
+                        
                                 setTimeout(() => {
                                     setZoomToFace(true);
                                 }, 1500);
 
-                                // Augustus intro speech
+                            
                                 setTimeout(() => {
                                     let i = 0;
                                     setIntroText('');
@@ -629,16 +624,16 @@
                                             i++;
                                         } else {
                                             clearInterval(typeIntro);
-                                            // Intro text fertig, nach noch längerer Duration weiter zur Timeline für alle Lesegeschwindigkeiten
+                                           
                                             setTimeout(() => {
                                                 setIntroComplete(true);
                                                 setShowFullAugustus(false);
                                                 setShowIntroPhase(false);
                                                 setShowTimeline(true);
-                                            }, 10000 * speedMultiplier); // Noch längere Duration für langsamere Leser
+                                            }, 10000 * speedMultiplier);
                                         }
-                                    }, 100 * speedMultiplier); // Noch langsameres Tippen für bessere Lesbarkeit
-                                }, 2500); // Kurz nach dem Zoom
+                                    }, 100 * speedMultiplier);
+                                }, 2500);
                             }, 1000 * speedMultiplier);
                         }
                     }, 100 * speedMultiplier);
@@ -647,7 +642,7 @@
                 }
             }, [showStartButton, speedMultiplier, introMessage, isSkipped]);
 
-            // Timeline Logic - only start after intro is complete
+
             useEffect(() => {
                 if (showTimeline && introComplete && currentStep < timeline.length && !isTimelineComplete) {
                     const timer = setTimeout(() => {
@@ -662,15 +657,13 @@
                                 setCurrentText(text.slice(0, i + 1));
                                 i++;
                             } else {
-                                clearInterval(typeWriter);
-                                setTimeout(() => {
-                                    if (currentStep < timeline.length - 1) {
-                                        setCurrentStep(currentStep + 1);
-                                    } else {
-                                        // Timeline ist komplett durchgelaufen
-                                        setIsTimelineComplete(true);
-                                    }
-                                }, 3000 * speedMultiplier);
+                                clearInterval(typeWriter);                        setTimeout(() => {
+                            if (currentStep < timeline.length - 1) {
+                                setCurrentStep(currentStep + 1);
+                            } else {
+                                setIsTimelineComplete(true);
+                            }
+                        }, 3000 * speedMultiplier);
                             }
                         }, 50 * speedMultiplier);
 
@@ -685,19 +678,11 @@
                 if (showTimeline && yearsShown.length > 0) {
                     const timelineContainer = document.querySelector('[data-timeline="years"]');
                     if (timelineContainer) {
-                        // Nur scrollen wenn:
-                        // 1. Beim Skip (alle Jahre auf einmal geladen + letzter Button aktiv)
-                        // 2. Bei normaler Animation (Jahre kommen nach und nach)
-                        // NICHT scrollen bei manueller Button-Auswahl durch Nutzer
-                        
                         if (currentStep === timeline.length - 1 && yearsShown.length === timeline.length) {
-                            // Skip-Modus: Alle Jahre da, letzter Button aktiv - nach rechts scrollen
                             timelineContainer.scrollLeft = timelineContainer.scrollWidth;
                         } else if (!isTimelineComplete) {
-                            // Normale Animation läuft noch - nach rechts scrollen zu neuen Einträgen
                             timelineContainer.scrollLeft = timelineContainer.scrollWidth;
                         }
-                        // Bei Timeline komplett + manueller Auswahl: NICHT scrollen
                     }
                 }
             }, [yearsShown, currentStep, isTimelineComplete]);
@@ -723,7 +708,7 @@
                 setTypedCommand('');
                 setShowStartButton(true);
                 setIsTimelineComplete(false);
-                setIsSkipped(false); // Skip-Flag zurücksetzen
+                setIsSkipped(false);
                 setShowInfoText(false);
                 setCurrentInfoText('');
             };
@@ -733,30 +718,27 @@
             };
 
             const skipToTimeline = () => {
-                // Kompletter Skip - direkt zur Timeline ohne Intro
-                setIsSkipped(true); // Skip-Flag setzen
+                setIsSkipped(true);
                 setShowStartButton(false);
                 setShowTerminalLoading(false);
                 setShowFullAugustus(false);
                 setShowIntroPhase(false);
-                setIntroText(''); // Intro-Text komplett löschen
+                setIntroText('');
                 setIntroComplete(true);
                 setZoomToFace(true);
                 setShowTimeline(true);
                 setTypedCommand('./historia_romana.exe');
                 
-                // Alle Jahre sofort anzeigen, aber auf letzten Button setzen
                 setYearsShown(timeline.map(item => item.year));
-                setCurrentStep(timeline.length - 1); // Letzter Button aktiv (Osmanen)
-                setCurrentText(''); // KEIN Text beim Skip - Speech bubble bleibt weg
-                setIsTimelineComplete(true); // Timeline als komplett markieren für Klickbarkeit
+                setCurrentStep(timeline.length - 1);
+                setCurrentText('');
+                setIsTimelineComplete(true);
             };
 
             const jumpToStep = (stepIndex) => {
                 if (isTimelineComplete) {
                     setCurrentStep(stepIndex);
                     setCurrentText(timeline[stepIndex].text);
-                    // Infotext anzeigen
                     setCurrentInfoText(timeline[stepIndex].info_text);
                     setShowInfoText(true);
                 }
@@ -771,7 +753,6 @@
                 className: "w-full h-screen bg-black text-green-400 font-mono overflow-hidden relative"
             }, [
 
-                // Start Button
                 showStartButton && React.createElement('div', {
                     key: 'startScreen',
                     className: "absolute inset-0 flex flex-col items-center justify-center bg-black z-50 p-8"
@@ -829,7 +810,6 @@
                     }, 'Animation überspringen')
                 ]),
 
-                // Header (nur zeigen wenn nicht Start-Screen)
                 !showStartButton && React.createElement('div', {
                     key: 'header',
                     className: "bg-gray-800 text-white p-2 text-xs sm:text-sm border-b border-gray-600"
@@ -844,13 +824,11 @@
                     ])
                 ),
 
-                // Console Bar (immer zeigen wenn nicht Start-Screen)
                 !showStartButton && React.createElement('div', {
                     key: 'consoleBar',
                     className: "console-bar absolute bottom-0 left-0 right-0 h-40 sm:h-48 bg-black border-t-2 border-green-600 z-30"
                 }, [
 
-                    // Timeline Years Container (immer da, aber nur sichtbar wenn Timeline aktiv)
                     React.createElement('div', {
                         key: 'timelineYears',
                         'data-timeline': 'years',
@@ -887,7 +865,6 @@
                     ),
 
 
-                    // Prompt (immer da)
                     React.createElement('div', {
                         key: 'prompt',
                         className: "absolute bottom-1 sm:bottom-2 left-2 sm:left-4 right-2 sm:right-4 z-40"
@@ -903,7 +880,6 @@
                                 key: 'status',
                                 className: "ml-1 sm:ml-2 text-green-400 terminal-glow"
                             }, [
-                                // Zeige verschiedene Status je nach Phase
                                 showTerminalLoading ? [
                                     typedCommand,
                                     showCursor && React.createElement('span', {
@@ -929,7 +905,6 @@
                 ]),
 
 
-                // Augustus Container (immer da wenn nicht Start-Screen, aber verschiedene Zustände)
                 !showStartButton && React.createElement('div', {
                     key: 'augustusContainer',
                     className: "absolute top-8 left-0 right-0 bottom-40 sm:bottom-48 flex items-center justify-center px-2 augustus-container"
@@ -941,7 +916,7 @@
                             'transform scale-50 sm:scale-100 opacity-0'
                         }`,
                         style: {
-                            transition: 'none' // Komplett deaktivieren für Chromium
+                            transition: 'none'
                         }
                     },
                         React.createElement('pre', {
@@ -950,7 +925,6 @@
                     )
                 ),
 
-                // Speech bubble - nur zeigen wenn Intro-Phase ODER Timeline mit Text
                 !showStartButton && ((showIntroPhase && introText) || (showTimeline && currentText)) && React.createElement('div', {
                     key: 'speech',
                     className: "absolute left-1/2 top-1/4 transform -translate-x-1/2 z-50"
@@ -973,35 +947,29 @@
                     ])
                 ),
 
-                // Infotext Overlay (nur zeigen wenn showInfoText true ist)
                 showInfoText && React.createElement('div', {
                     key: 'infoOverlay',
                     className: "fixed inset-0 z-50 flex items-center justify-center p-4",
                     onClick: closeInfoText
                 }, [
-                    // Blurry Background
                     React.createElement('div', {
                         key: 'backdrop',
                         className: "absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
                     }),
-                    // Info Content
                     React.createElement('div', {
                         key: 'infoContent',
                         className: "relative bg-gray-900 border-2 border-green-400 rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-y-auto",
                         onClick: (e) => e.stopPropagation()
                     }, [
-                        // Close Button
                         React.createElement('button', {
                             key: 'closeBtn',
                             onClick: closeInfoText,
                             className: "absolute top-2 right-2 text-green-400 hover:text-green-300 text-2xl font-bold w-8 h-8 flex items-center justify-center"
                         }, '×'),
-                        // Title
                         React.createElement('h2', {
                             key: 'title',
                             className: "text-yellow-400 text-xl sm:text-2xl font-bold mb-4 pr-8"
                         }, `${timeline[currentStep]?.year} - ${timeline[currentStep]?.keyword}`),
-                        // Info Text
                         React.createElement('div', {
                             key: 'infoTextContent',
                             className: "text-amber-400 text-base sm:text-lg leading-relaxed"
@@ -1009,14 +977,12 @@
                     ])
                 ]),
 
-                // Zurück Button (dezent, halbtransparent)
                 !showStartButton && React.createElement('button', {
                     key: 'backBtn',
                     onClick: restartAnimation,
                     className: "fixed top-12 sm:top-16 left-2 sm:left-4 bg-gray-600 bg-opacity-50 text-gray-300 px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-gray-500 hover:bg-opacity-70 transition-all font-bold text-sm sm:text-base z-40"
                 }, '←'),
 
-                // Restart Button (nur zeigen wenn Timeline fertig und nicht Start-Screen)
                 !showStartButton && showTimeline && currentStep >= timeline.length && React.createElement('button', {
                     key: 'restart',
                     onClick: restartAnimation,

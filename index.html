@@ -45,7 +45,8 @@
             }
         }
 
-        .text-green-400 {
+        /* Glow-Effekt nur für bestimmte Terminal-Elemente, nicht für Info-Texte */
+        .terminal-glow {
             animation: terminal-glow 2s ease-in-out infinite;
         }
 
@@ -203,7 +204,7 @@
             const [showInfoText, setShowInfoText] = useState(false);
             const [currentInfoText, setCurrentInfoText] = useState('');
 
-            const introMessage = "Salve! Ich bin Augustus, der erste Kaiser Roms. Ich werde euch heute mitnehmen auf eine faszinierende Reise durch die römische Geschichte - von der Gründung Roms bis zum Fall des letzten Kaisers. Am Ende könnt ihr auf die einzelnen Jahreszahlen klicken, um noch mehr Details zu erfahren. Lasst uns beginnen!";
+            const introMessage = "Salve! Ich bin Augustus, der erste Kaiser Roms. Ich werde euch heute mitnehmen auf eine faszinierende Reise durch die römische Geschichte. Am Ende könnt ihr auf die einzelnen Jahreszahlen klicken, um noch mehr Details zu erfahren. Lasst uns beginnen!";
 
             const timeline = [
                 { 
@@ -519,59 +520,6 @@
                     info_text: 'Rom wurde zur ewigen Idee, die über das Ende des Reiches hinaus fortwirkt. Das Heilige Römische Reich (800-1806) berief sich auf die römische Tradition, ebenso Napoleon und Hitler. Die römische Rechtsprechung bildet die Grundlage europäischer Gesetze. Lateinisch war jahrhundertelang die Wissenschaftssprache. Römische Architektur inspirierte das Kapitol in Washington und unzählige Regierungsgebäude weltweit. Der Titel "Kaiser" stammt von "Caesar", ebenso "Zar" und "Kaiser". Die Idee der Republik, des Senats, der Gewaltenteilung prägt moderne Demokratien. "SPQR" (Senatus Populusque Romanus) schmückt noch heute Roms Wappen. Rom ist nicht nur Geschichte, sondern lebendige Tradition - "Urbs Aeterna", die ewige Stadt.'
                 }];
 
-                // { year: '753 v.Chr.', keyword: 'Gründung', text: 'Hier beginnt unsere Geschichte - Romulus gründet Rom am Tiber!' },
-                // { year: '510 v.Chr.', keyword: 'Republik', text: 'Lucius Junius Brutus vertreibt Tarquinius Superbus ins Exil. Die römische Republik entsteht!' },
-                // { year: '494 v.Chr.', keyword: 'Plebs', text: 'Erste Secessio plebis - die Plebejer erkämpfen sich politische Rechte.' },
-                // { year: '399 v.Chr.', keyword: 'Gallier', text: 'Die Gallier unter Brennus erobern und plündern Rom. Ein schwarzer Tag!' },
-                // { year: '264-241 v.Chr.', keyword: '1. Punischer Krieg', text: 'Der Erste Punische Krieg beginnt. Rom kämpft gegen Karthago um Sizilien.' },
-                // { year: '219-201 v.Chr.', keyword: '2. Punischer Krieg', text: 'Hannibal überquert die Alpen mit Elefanten. Der Zweite Punische Krieg beginnt!' },
-                // { year: '216 v.Chr.', keyword: 'Cannae', text: 'Katastrophe bei Cannae! Hannibal vernichtet fast das gesamte römische Heer.' },
-                // { year: '202 v.Chr.', keyword: 'Zama', text: 'Scipio Africanus besiegt Hannibal bei Zama. Karthago ist besiegt!' },
-                // { year: '149-146 v.Chr.', keyword: '2. Punischer Krieg', text: 'Dritter Punischer Krieg - Cato fordert: "Carthago delenda est!"' },
-                // { year: '146 v.Chr.', keyword: 'Zerstörung', text: 'Karthago wird zerstört. Auch Korinth fällt - Rom herrscht über das Mittelmeer.' },
-                // { year: '132 v.Chr.', keyword: 'Pergamon', text: 'Pergamon wird Rom vererbt - ein reicher Gewinn für das Reich!' },
-                // { year: '132 v.Chr.', keyword: 'Gracchus', text: 'Tiberius Gracchus versucht Landreformen. Er wird ermordet - die Republik wankt.' },
-                // { year: '122 v.Chr.', keyword: 'Gaius', text: 'Gaius Gracchus setzt das Werk seines Bruders fort. Auch er stirbt gewaltsam.' },
-                // { year: '111 v.Chr.', keyword: 'Marius', text: 'Marius reformiert das Heer gegen die Numider. Berufssoldaten statt Bürgermiliz.' },
-                // { year: '91 v.Chr.', keyword: 'Bündnis', text: 'Bundesgenossenkrieg - Italiker kämpfen um römisches Bürgerrecht.' },
-                // { year: '80er v.Chr.', keyword: 'Sulla', text: 'Sulla marschiert gegen Rom. Proskriptionen und Bürgerkrieg.' },
-                // { year: '76 v.Chr.', keyword: 'Spartacus', text: 'Spartacus-Aufstand! Gladiatoren und Sklaven rebellieren gegen Rom.' },
-                // { year: '60 v.Chr.', keyword: 'Triumvirat', text: 'Erstes Triumvirat: Pompeius, Crassus und mein Adoptivvater Caesar.' },
-                // { year: '50er v.Chr.', keyword: 'Gallien', text: 'Caesar erobert Gallien. "Gallia est omnis divisa in partes tres..."' },
-                // { year: '53 v.Chr.', keyword: 'Carrhae', text: 'Crassus stirbt bei Carrhae gegen die Parther. Das Triumvirat zerbricht.' },
-                // { year: '49 v.Chr.', keyword: 'Rubikon', text: 'Caesar überschreitet den Rubikon. "Alea iacta est!" - der Bürgerkrieg beginnt.' },
-                // { year: '48 v.Chr.', keyword: 'Pharsalus', text: 'Caesar besiegt Pompeius bei Pharsalus. Pompeius flieht nach Ägypten.' },
-                // { year: '44 v.Chr.', keyword: 'Iden', text: 'Caesar wird an den Iden des März ermordet. "Et tu, Brute?" Ein dunkler Tag...' },
-                // { year: '43 v.Chr.', keyword: 'Rache', text: 'Zweites Triumvirat: Antonius, Lepidus und ich. Wir rächen Caesar.' },
-                // { year: '42 v.Chr.', keyword: 'Philippi', text: 'Schlacht bei Philippi - Brutus und Cassius sind besiegt und tot.' },
-                // { year: '31 v.Chr.', keyword: 'Actium', text: 'Ich besiegte Antonius und Kleopatra bei Actium. Die Republik war am Ende.' },
-                // { year: '30 v.Chr.', keyword: 'Ägypten', text: 'Ägypten wird römische Provinz. Antonius und Kleopatra sind tot.' },
-                // { year: '27 v.Chr.', keyword: 'Augustus', text: 'Der Senat verlieh mir den Titel Augustus. Das Kaiserreich begann!' },
-                // { year: '9 n.Chr.', keyword: 'Varus', text: 'Varusschlacht im Teutoburger Wald. "Varus, gib mir meine Legionen zurück!"' },
-                // { year: '14 n.Chr.', keyword: 'Tod', text: 'Meine Herrschaft endete hier. Tiberius wird mein Nachfolger.' },
-                // { year: '64 n.Chr.', keyword: 'Brand', text: 'Nero lässt Rom brennen. Die Christen werden zu Sündenböcken gemacht.' },
-                // { year: '68 n.Chr.', keyword: 'Nero', text: 'Nero stirbt. "Qualis artifex pereo!" - Welch ein Künstler geht zugrunde!' },
-                // { year: '69 n.Chr.', keyword: 'Vierkaiserjahr', text: 'Galba, Otho, Vitellius, Vespasian - vier Kaiser in einem Jahr!' },
-                // { year: '79 n.Chr.', keyword: 'Vesuv', text: 'Der Vesuv bricht aus. Pompeji und Herculaneum werden begraben.' },
-                // { year: '80 n.Chr.', keyword: 'Kolosseum', text: 'Das Kolosseum wird eröffnet. "Panem et circenses" für das Volk!' },
-                // { year: '98-180 n.Chr.', keyword: 'Adoptivkaiser', text: 'Trajan, Hadrian, Antoninus Pius, Marcus Aurelius - die goldene Zeit!' },
-                // { year: '98 n.Chr.', keyword: 'Trajan', text: 'Trajan wird Kaiser. Das Reich erreicht seine größte Ausdehnung.' },
-                // { year: '117 n.Chr.', keyword: 'Hadrian', text: 'Hadrian wird Kaiser. Der Hadrianswall entsteht in Britannia. Das Reich ist am größten!' },
-                // { year: '161 n.Chr.', keyword: 'Philosoph', text: 'Marcus Aurelius wird Kaiser. Der Philosoph auf dem Thron.' },
-                // { year: '212 n.Chr.', keyword: 'Caracalla', text: 'Caracalla verleiht allen freien Reichsbewohnern das Bürgerrecht.' },
-                // { year: '234-284 n.Chr.', keyword: 'Chaos', text: 'Soldatenkaiserzeit beginnt. 50 Jahre Chaos und Legitimationsprobleme.' },
-                // { year: '284-306 n.Chr.', keyword: 'Tetrarchie', text: 'Diokletian teilt das Reich. Tetrarchie - vier Kaiser regieren.' },
-                // { year: '311 n.Chr.', keyword: 'Konstantin', text: 'Konstantin wird Alleinherrscher. "In hoc signo vinces!"' },
-                // { year: '313 n.Chr.', keyword: 'Toleranz', text: 'Toleranzedikt von Mailand - das Christentum wird legal.' },
-                // { year: '330 n.Chr.', keyword: 'Byzanz', text: 'Konstantinopel wird gegründet. "Nova Roma" am Bosporus.' },
-                // { year: '378 n.Chr.', keyword: 'Adrianopel', text: 'Schlacht von Adrianopel - Kaiser Valens stirbt gegen die Goten.' },
-                // { year: '394 n.Chr.', keyword: 'Staatsreligion', text: 'Das Christentum wird Staatsreligion. Die alten Götter weichen dem Kreuz.' },
-                // { year: '410 n.Chr.', keyword: 'Alarich', text: 'Alarich plündert Rom. Die Ewige Stadt ist nicht mehr ewig.' },
-                // { year: '455 n.Chr.', keyword: 'Vandalen', text: 'Vandalen plündern Rom. Das Westreich zerfällt.' },
-                // { year: '476 n.Chr.', keyword: 'Ende', text: 'Odoaker setzt Romulus Augustulus ab. Das Weströmische Reich endet.' },
-                // { year: '1453 n.Chr.', keyword: 'Osmanen', text: 'Konstantinopel fällt an die Osmanen. Das letzte Erbe Roms stirbt.' },
-                // { year: '', keyword: 'Ewigkeit', text: 'Aber die Idee von Rom... sie lebt ewig weiter. "Urbs Aeterna!"' }];
-
             const augustusFullAscii = `                                                                                                                                                                                                                                                                                                                                                                                                               
                                                      . .:---------=*###***++=----::::----=--=-...                                                                                                                                                                                                                                                                                                               
                                                       ...:--------=+*####**++==--:-:------===:...                                                                                                                                                                                                                                                                                                               
@@ -830,9 +778,9 @@
                 }, [
                     React.createElement('h1', {
                         key: 'mainTitle',
-                        className: "text-6xl md:text-8xl text-amber-400 mb-12 text-center font-bold tracking-wider",
+                        className: "text-6xl md:text-8xl text-amber-400 terminal-glow mb-12 text-center font-bold tracking-wider",
                         style: { fontFamily: 'Cinzel, serif' }
-                    }, 'ROMANA HISTORIA'),
+                    }, 'HISTORIA ROMANA'),
                     React.createElement('div', {
                         key: 'speedControl',
                         className: "mb-8 text-center"
@@ -873,7 +821,7 @@
                         key: 'startBtn',
                         onClick: startAnimation,
                         className: "bg-green-600 text-black px-8 py-4 rounded-lg hover:bg-green-500 transition-colors font-bold text-xl shadow-lg border-2 border-green-400 uppercase tracking-wider mb-4"
-                    }, 'Historia Romana Starten'),
+                    }, 'Starten'),
                     React.createElement('button', {
                         key: 'skipBtn',
                         onClick: skipToTimeline,
@@ -953,7 +901,7 @@
                             }, 'augustus@roma:~$ '),
                             React.createElement('span', {
                                 key: 'status',
-                                className: "ml-1 sm:ml-2 text-green-400"
+                                className: "ml-1 sm:ml-2 text-green-400 terminal-glow"
                             }, [
                                 // Zeige verschiedene Status je nach Phase
                                 showTerminalLoading ? [
@@ -1060,6 +1008,13 @@
                         }, currentInfoText)
                     ])
                 ]),
+
+                // Zurück Button (dezent, halbtransparent)
+                !showStartButton && React.createElement('button', {
+                    key: 'backBtn',
+                    onClick: restartAnimation,
+                    className: "fixed top-12 sm:top-16 left-2 sm:left-4 bg-gray-600 bg-opacity-50 text-gray-300 px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-gray-500 hover:bg-opacity-70 transition-all font-bold text-sm sm:text-base z-40"
+                }, '←'),
 
                 // Restart Button (nur zeigen wenn Timeline fertig und nicht Start-Screen)
                 !showStartButton && showTimeline && currentStep >= timeline.length && React.createElement('button', {

@@ -80,6 +80,7 @@
             
             .console-bar {
                 height: 8rem !important;
+                bottom: 20pt !important;
             }
         }
 
@@ -100,6 +101,7 @@
             
             .console-bar {
                 height: 6rem !important;
+                bottom: 50pt !important;
             }
         }
     </style>
@@ -112,7 +114,7 @@
 
         const AugustusTerminal = () => {
 
-            const DEV_SPEED_MULTIPLIER = 0.5;
+            const DEV_SPEED_MULTIPLIER = 0.3;
             
             const [currentStep, setCurrentStep] = useState(0);
             const [showFullAugustus, setShowFullAugustus] = useState(false);
@@ -420,7 +422,7 @@
 
                     React.createElement('div', {
                         key: 'prompt',
-                        className: "absolute bottom-6 sm:bottom-2 left-2 sm:left-4 right-2 sm:right-4 z-40"
+                        className: "absolute bottom-1 sm:bottom-2 left-2 sm:left-4 right-2 sm:right-4 z-40"
                     },
                         React.createElement('div', {
                             className: "bg-gray-900 border border-green-600 p-1 sm:p-2 rounded text-xs sm:text-sm"

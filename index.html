@@ -17,6 +17,17 @@
             font-family: monospace;
         }
 
+        @keyframes fadeInFromRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
         @keyframes slide-in-left {
             from {
                 transform: translateX(100%);
@@ -31,6 +42,15 @@
 
         .animate-slide-in-left {
             animation: slide-in-left 1.2s ease-out forwards;
+        }
+
+        @keyframes cursor-blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .cursor-blink {
+            animation: cursor-blink 1s infinite;
         }
 
         @keyframes terminal-glow {
@@ -187,12 +207,11 @@
             const [zoomToFace, setZoomToFace] = useState(false);
             const [showTimeline, setShowTimeline] = useState(false);
             const [currentText, setCurrentText] = useState('');
-            const [showCursor, setShowCursor] = useState(true);
             const [yearsShown, setYearsShown] = useState([]);
             const [showTerminalLoading, setShowTerminalLoading] = useState(false);
             const [typedCommand, setTypedCommand] = useState('');
             const [showStartButton, setShowStartButton] = useState(true);
-            const [speedMultiplier, setSpeedMultiplier] = useState(0.4);
+            const [speedMultiplier, setSpeedMultiplier] = useState(0.5);
             const [isTimelineComplete, setIsTimelineComplete] = useState(false);
             const [introComplete, setIntroComplete] = useState(false);
             const [isSkipped, setIsSkipped] = useState(false);
@@ -266,7 +285,7 @@
                     year: '132 v.Chr.', 
                     keyword: 'Pergamon', 
                     text: 'Pergamon wird Rom vererbt - ein reicher Gewinn für das Reich!',
-                    info_text: 'König Attalus III. von Pergamon vermachte sein Reich testamentarisch an Rom, da er keine Erben hatte und befürchtete, dass das Reich nach seinem Tod im Chaos versinken würde. Pergamon war eines der reichsten hellenistischen Königreiche in Kleinasien, berühmt für seine Bibliothek und Kunstschätze. Die Erbschaft brachte Rom enormen Reichtum, führte aber auch zu sozialen Spannungen, da die Beute ungleich verteilt wurde. Tiberius Gracchus wollte das pergamenische Vermögen für seine Landreformen nutzen, was zu seinem Konflikt mit dem Senat beitrug.'
+                    info_text: 'König Attalus III. von Pergamon vermachte sein Reich testamentarisch an Rom, da er keine Erben hatte und befürchtete, dass das Reich nach seinem Tod im Chaos versinken würde. Pergamon war eines der reichsten hellenistischen Königreiche in Kleinasien, berühmt für seine Bibliothek und Kunstschätze. Die Erbschaft brachte Rom enormen Reichtum, führte aber auch zu sozialen Spannungen, da die Beute ungleich verteilt wurde und damit zum ersten mal seit langem ein gemeinsamer gefährlicher äußerer Feind fehlte der die Bevölkerung einte. Tiberius Gracchus wollte das pergamenische Vermögen für seine Landreformen nutzen, was zu seinem Konflikt mit dem Senat beitrug.'
                 },
                 { 
                     year: '132 v.Chr.', 
@@ -657,13 +676,14 @@
                                 setCurrentText(text.slice(0, i + 1));
                                 i++;
                             } else {
-                                clearInterval(typeWriter);                        setTimeout(() => {
-                            if (currentStep < timeline.length - 1) {
-                                setCurrentStep(currentStep + 1);
-                            } else {
-                                setIsTimelineComplete(true);
-                            }
-                        }, 3000 * speedMultiplier);
+                                clearInterval(typeWriter);
+                                setTimeout(() => {
+                                    if (currentStep < timeline.length - 1) {
+                                        setCurrentStep(currentStep + 1);
+                                    } else {
+                                        setIsTimelineComplete(true);
+                                    }
+                                }, 3000 * speedMultiplier);
                             }
                         }, 50 * speedMultiplier);
 
@@ -675,26 +695,23 @@
             }, [currentStep, showTimeline, introComplete, isTimelineComplete, speedMultiplier]);
 
             useEffect(() => {
-                if (showTimeline && yearsShown.length > 0) {
+                if (showTimeline && yearsShown.length > 0 && !isTimelineComplete) {
                     const timelineContainer = document.querySelector('[data-timeline="years"]');
                     if (timelineContainer) {
-                        if (currentStep === timeline.length - 1 && yearsShown.length === timeline.length) {
+                        setTimeout(() => {
                             timelineContainer.scrollLeft = timelineContainer.scrollWidth;
-                        } else if (!isTimelineComplete) {
-                            timelineContainer.scrollLeft = timelineContainer.scrollWidth;
-                        }
+                        }, 100);
                     }
                 }
-            }, [yearsShown, currentStep, isTimelineComplete]);
-
-            useEffect(() => {
-                const cursor = setInterval(() => {
-                    setShowCursor(prev => !prev);
-                }, 500);
-                return () => clearInterval(cursor);
-            }, []);
+            }, [yearsShown, isTimelineComplete]);
 
             const restartAnimation = () => {
+                const timers = [];
+                for (let i = 1; i < 99999; i++) {
+                    clearTimeout(i);
+                    clearInterval(i);
+                }
+                
                 setCurrentStep(0);
                 setShowTerminalLoading(false);
                 setShowFullAugustus(false);
@@ -718,6 +735,11 @@
             };
 
             const skipToTimeline = () => {
+                for (let i = 1; i < 99999; i++) {
+                    clearTimeout(i);
+                    clearInterval(i);
+                }
+                
                 setIsSkipped(true);
                 setShowStartButton(false);
                 setShowTerminalLoading(false);
@@ -845,11 +867,16 @@
                                 key: index,
                                 onClick: () => jumpToStep(index),
                                 disabled: !isTimelineComplete,
-                                className: `flex flex-col items-center whitespace-nowrap flex-shrink-0 transition-all duration-300 timeline-button ${index === currentStep ? 'active' : ''} ${!isTimelineComplete ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`,
+                                className: `flex flex-col items-center whitespace-nowrap flex-shrink-0 transition-all duration-500 timeline-button ${index === currentStep ? 'active' : ''} ${!isTimelineComplete ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`,
                                 style: {
-                                    animationDelay: `${index * 0}s`,
-                                    transform: 'translateX(100%)',
-                                    animation: `slide-in-left 1.2s ease-out ${index * 0}s forwards`
+                                    opacity: 1,
+                                    minWidth: '100px',
+                                    padding: '8px 12px',
+                                    borderRadius: '8px',
+                                    backgroundColor: index === currentStep ? 'rgba(34, 197, 94, 0.1)' : 'transparent',
+                                    border: index === currentStep ? '2px solid #22c55e' : '2px solid transparent',
+                                    transform: 'translateX(0)',
+                                    animation: `fadeInFromRight 0.8s ease-out ${index * 0.1}s both`
                                 }
                             }, [
                                 React.createElement('div', {
@@ -882,21 +909,21 @@
                             }, [
                                 showTerminalLoading ? [
                                     typedCommand,
-                                    showCursor && React.createElement('span', {
+                                    React.createElement('span', {
                                         key: 'cursor',
-                                        className: "text-yellow-400"
+                                        className: "text-yellow-400 cursor-blink"
                                     }, '▋')
                                 ] : showTimeline ? [
                                     currentStep >= timeline.length ? 'Historia completa!' : 'Loading historia...',
-                                    showCursor && React.createElement('span', {
+                                    React.createElement('span', {
                                         key: 'cursor2',
-                                        className: "text-yellow-400"
+                                        className: "text-yellow-400 cursor-blink"
                                     }, '▋')
                                 ] : showFullAugustus ? [
                                     'Initializing...',
-                                    showCursor && React.createElement('span', {
+                                    React.createElement('span', {
                                         key: 'cursor3',
-                                        className: "text-yellow-400"
+                                        className: "text-yellow-400 cursor-blink"
                                     }, '▋')
                                 ] : null
                             ])

@@ -9,6 +9,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
@@ -827,6 +828,11 @@
                     key: 'startScreen',
                     className: "absolute inset-0 flex flex-col items-center justify-center bg-black z-50 p-8"
                 }, [
+                    React.createElement('h1', {
+                        key: 'mainTitle',
+                        className: "text-6xl md:text-8xl text-amber-400 mb-12 text-center font-bold tracking-wider",
+                        style: { fontFamily: 'Cinzel, serif' }
+                    }, 'ROMANA HISTORIA'),
                     React.createElement('div', {
                         key: 'speedControl',
                         className: "mb-8 text-center"

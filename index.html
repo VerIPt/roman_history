@@ -168,6 +168,8 @@
             
             const [currentStep, setCurrentStep] = useState(0);
             const [showFullAugustus, setShowFullAugustus] = useState(false);
+            const [showIntroPhase, setShowIntroPhase] = useState(false);
+            const [introText, setIntroText] = useState('');
             const [zoomToFace, setZoomToFace] = useState(false);
             const [showTimeline, setShowTimeline] = useState(false);
             const [currentText, setCurrentText] = useState('');
@@ -177,9 +179,13 @@
             const [typedCommand, setTypedCommand] = useState('');
             const [showStartButton, setShowStartButton] = useState(true);
             const [speedMultiplier, setSpeedMultiplier] = useState(0.4);
+            const [isTimelineComplete, setIsTimelineComplete] = useState(false);
+            const [introComplete, setIntroComplete] = useState(false);
+
+            const introMessage = "Salve! Ich bin Augustus, der erste Kaiser Roms. Ich werde euch heute mitnehmen auf eine faszinierende Reise durch die römische Geschichte - von der Gründung Roms bis zum Fall des letzten Kaisers. Am Ende könnt ihr auf die einzelnen Jahreszahlen klicken, um noch mehr Details zu erfahren. Lasst uns beginnen!";
 
             const timeline = [
-                { year: '753 v.Chr.', keyword: 'Gründung', text: 'Salve! Ich bin Augustus. Hier beginnt unsere Geschichte - Romulus gründet Rom am Tiber!' },
+                { year: '753 v.Chr.', keyword: 'Gründung', text: 'Hier beginnt unsere Geschichte - Romulus gründet Rom am Tiber!' },
                 { year: '510 v.Chr.', keyword: 'Republik', text: 'Lucius Junius Brutus vertreibt Tarquinius Superbus ins Exil. Die römische Republik entsteht!' },
                 { year: '494 v.Chr.', keyword: 'Plebs', text: 'Erste Secessio plebis - die Plebejer erkämpfen sich politische Rechte.' },
                 { year: '399 v.Chr.', keyword: 'Gallier', text: 'Die Gallier unter Brennus erobern und plündern Rom. Ein schwarzer Tag!' },
@@ -321,28 +327,47 @@
                             setTimeout(() => {
                                 setShowTerminalLoading(false);
                                 setShowFullAugustus(true);
+                                
+                                // Start intro phase immediately
+                                setShowIntroPhase(true);
 
                                 // Zoom
                                 setTimeout(() => {
                                     setZoomToFace(true);
                                 }, 1500);
 
-                                // Timeline
+                                // Augustus intro speech
                                 setTimeout(() => {
-                                    setShowFullAugustus(false);
-                                    setShowTimeline(true);
-                                }, 3000 * speedMultiplier);
+                                    let i = 0;
+                                    setIntroText('');
+                                    
+                                    const typeIntro = setInterval(() => {
+                                        if (i < introMessage.length) {
+                                            setIntroText(introMessage.slice(0, i + 1));
+                                            i++;
+                                        } else {
+                                            clearInterval(typeIntro);
+                                            // Intro text fertig, nach noch längerer Duration weiter zur Timeline für alle Lesegeschwindigkeiten
+                                            setTimeout(() => {
+                                                setIntroComplete(true);
+                                                setShowFullAugustus(false);
+                                                setShowIntroPhase(false);
+                                                setShowTimeline(true);
+                                            }, 10000 * speedMultiplier); // Noch längere Duration für langsamere Leser
+                                        }
+                                    }, 100 * speedMultiplier); // Noch langsameres Tippen für bessere Lesbarkeit
+                                }, 2500); // Kurz nach dem Zoom
                             }, 1000 * speedMultiplier);
                         }
                     }, 100 * speedMultiplier);
 
                     return () => clearInterval(typeCommand);
                 }
-            }, [showStartButton]);
+            }, [showStartButton, speedMultiplier, introMessage]);
 
-            // Timeline Logic
+            // Timeline Logic - only start after intro is complete
             useEffect(() => {
-                if (showTimeline && currentStep < timeline.length) {
+                if (showTimeline && introComplete && currentStep < timeline.length && !isTimelineComplete) {
                     const timer = setTimeout(() => {
                         setYearsShown(prev => [...prev, timeline[currentStep].year]);
 
@@ -359,6 +384,9 @@
                                 setTimeout(() => {
                                     if (currentStep < timeline.length - 1) {
                                         setCurrentStep(currentStep + 1);
+                                    } else {
+                                        // Timeline ist komplett durchgelaufen
+                                        setIsTimelineComplete(true);
                                     }
                                 }, 3000 * speedMultiplier);
                             }
@@ -369,7 +397,7 @@
 
                     return () => clearTimeout(timer);
                 }
-            }, [currentStep, showTimeline]);
+            }, [currentStep, showTimeline, introComplete, isTimelineComplete, speedMultiplier]);
 
             useEffect(() => {
                 if (showTimeline && yearsShown.length > 0) {
@@ -392,12 +420,16 @@
                 setCurrentStep(0);
                 setShowTerminalLoading(false);
                 setShowFullAugustus(false);
+                setShowIntroPhase(false);
+                setIntroText('');
+                setIntroComplete(false);
                 setZoomToFace(false);
                 setShowTimeline(false);
                 setCurrentText('');
                 setYearsShown([]);
                 setTypedCommand('');
                 setShowStartButton(true);
+                setIsTimelineComplete(false);
             };
 
             const startAnimation = () => {
@@ -405,8 +437,10 @@
             };
 
             const jumpToStep = (stepIndex) => {
-                setCurrentStep(stepIndex);
-                setCurrentText(timeline[stepIndex].text);
+                if (isTimelineComplete) {
+                    setCurrentStep(stepIndex);
+                    setCurrentText(timeline[stepIndex].text);
+                }
             };
 
             return React.createElement('div', {
@@ -451,7 +485,7 @@
                             React.createElement('div', {
                                 key: 'speedValue',
                                 className: "text-green-400 font-bold"
-                            }, `Geschwindigkeit: ${(speedMultiplier * 100).toFixed(0)}%`)
+                            }, `Geschwindigkeit: ${(100 - (speedMultiplier - 0.1) * 100 / 0.7).toFixed(0)}%`)
                         ])
                     ]),
                     React.createElement('button', {
@@ -496,7 +530,8 @@
                             React.createElement('button', {
                                 key: index,
                                 onClick: () => jumpToStep(index),
-                                className: `flex flex-col items-center whitespace-nowrap flex-shrink-0 cursor-pointer transition-all duration-300 timeline-button ${index === currentStep ? 'active' : ''}`,
+                                disabled: !isTimelineComplete,
+                                className: `flex flex-col items-center whitespace-nowrap flex-shrink-0 transition-all duration-300 timeline-button ${index === currentStep ? 'active' : ''} ${!isTimelineComplete ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`,
                                 style: {
                                     animationDelay: `${index * 0}s`,
                                     transform: 'translateX(100%)',
@@ -566,6 +601,29 @@
                     )
                 ),
 
+                // Speech bubble - zeigt Intro oder Timeline Text (während Augustus Animation oder Timeline)
+                !showStartButton && (introText || currentText) && React.createElement('div', {
+                    key: 'speech',
+                    className: "absolute left-1/2 top-1/4 transform -translate-x-1/2 z-50"
+                },
+                    React.createElement('div', {
+                        className: "speech-bubble bg-gray-900 border-2 border-green-400 rounded-lg p-3 sm:p-6 relative max-w-xs sm:max-w-2xl mx-2"
+                    }, [
+                        React.createElement('div', {
+                            key: 'arrow1',
+                            className: "absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-4 sm:border-l-8 border-r-4 sm:border-r-8 border-t-4 sm:border-t-8 border-transparent border-t-gray-900"
+                        }),
+                        React.createElement('div', {
+                            key: 'arrow2',
+                            className: "absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-4 sm:border-l-8 border-r-4 sm:border-r-8 border-t-4 sm:border-t-8 border-transparent border-t-green-400"
+                        }),
+                        React.createElement('div', {
+                            key: 'text',
+                            className: "text-green-300 text-sm sm:text-lg leading-relaxed text-center"
+                        }, showIntroPhase ? introText : currentText)
+                    ])
+                ),
+
 
                 // Timeline Phase (nur zeigen wenn nicht Start-Screen)
                 !showStartButton && showTimeline && [
@@ -581,29 +639,6 @@
                                 className: "augustus-ascii text-amber-400 whitespace-pre overflow-hidden"
                             }, augustusFullAscii)
                         )
-                    ),
-
-
-                    currentText && React.createElement('div', {
-                        key: 'speech',
-                        className: "absolute left-1/2 top-1/4 transform -translate-x-1/2 z-50"
-                    },
-                        React.createElement('div', {
-                            className: "speech-bubble bg-gray-900 border-2 border-green-400 rounded-lg p-3 sm:p-6 relative max-w-xs sm:max-w-2xl mx-2"
-                        }, [
-                            React.createElement('div', {
-                                key: 'arrow1',
-                                className: "absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-4 sm:border-l-8 border-r-4 sm:border-r-8 border-t-4 sm:border-t-8 border-transparent border-t-gray-900"
-                            }),
-                            React.createElement('div', {
-                                key: 'arrow2',
-                                className: "absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-4 sm:border-l-8 border-r-4 sm:border-r-8 border-t-4 sm:border-t-8 border-transparent border-t-green-400"
-                            }),
-                            React.createElement('div', {
-                                key: 'text',
-                                className: "text-green-300 text-sm sm:text-lg leading-relaxed text-center"
-                            }, currentText)
-                        ])
                     )
                 ],
 

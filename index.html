@@ -65,10 +65,27 @@
             background: #555;
         }
 
+        /* Anti-Flicker für Augustus */
+        .augustus-container {
+            will-change: transform;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            /* Deaktiviere transitions um Flackern zu vermeiden */
+            transition: none !important;
+        }
+
         /* Responsive*/
         .augustus-ascii {
             font-size: clamp(6px, 1.5vw, 12px);
             line-height: 1;
+            /* Browser-spezifische Optimierungen gegen Flackern */
+            will-change: transform;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
         }
 
         @media (max-width: 768px) {
@@ -181,6 +198,7 @@
             const [speedMultiplier, setSpeedMultiplier] = useState(0.4);
             const [isTimelineComplete, setIsTimelineComplete] = useState(false);
             const [introComplete, setIntroComplete] = useState(false);
+            const [isSkipped, setIsSkipped] = useState(false);
 
             const introMessage = "Salve! Ich bin Augustus, der erste Kaiser Roms. Ich werde euch heute mitnehmen auf eine faszinierende Reise durch die römische Geschichte - von der Gründung Roms bis zum Fall des letzten Kaisers. Am Ende könnt ihr auf die einzelnen Jahreszahlen klicken, um noch mehr Details zu erfahren. Lasst uns beginnen!";
 
@@ -311,7 +329,7 @@
 
 
             useEffect(() => {
-                if (!showStartButton) {
+                if (!showStartButton && !isSkipped) {
                     const command = './historia_romana.exe';
                     let i = 0;
 
@@ -363,7 +381,7 @@
 
                     return () => clearInterval(typeCommand);
                 }
-            }, [showStartButton, speedMultiplier, introMessage]);
+            }, [showStartButton, speedMultiplier, introMessage, isSkipped]);
 
             // Timeline Logic - only start after intro is complete
             useEffect(() => {
@@ -403,11 +421,22 @@
                 if (showTimeline && yearsShown.length > 0) {
                     const timelineContainer = document.querySelector('[data-timeline="years"]');
                     if (timelineContainer) {
-                        // Immer sanft nach rechts scrollen zu neuen Einträgen
-                        timelineContainer.scrollLeft = timelineContainer.scrollWidth;
+                        // Nur scrollen wenn:
+                        // 1. Beim Skip (alle Jahre auf einmal geladen + letzter Button aktiv)
+                        // 2. Bei normaler Animation (Jahre kommen nach und nach)
+                        // NICHT scrollen bei manueller Button-Auswahl durch Nutzer
+                        
+                        if (currentStep === timeline.length - 1 && yearsShown.length === timeline.length) {
+                            // Skip-Modus: Alle Jahre da, letzter Button aktiv - nach rechts scrollen
+                            timelineContainer.scrollLeft = timelineContainer.scrollWidth;
+                        } else if (!isTimelineComplete) {
+                            // Normale Animation läuft noch - nach rechts scrollen zu neuen Einträgen
+                            timelineContainer.scrollLeft = timelineContainer.scrollWidth;
+                        }
+                        // Bei Timeline komplett + manueller Auswahl: NICHT scrollen
                     }
                 }
-            }, [yearsShown]);
+            }, [yearsShown, currentStep, isTimelineComplete]);
 
             useEffect(() => {
                 const cursor = setInterval(() => {
@@ -430,10 +459,31 @@
                 setTypedCommand('');
                 setShowStartButton(true);
                 setIsTimelineComplete(false);
+                setIsSkipped(false); // Skip-Flag zurücksetzen
             };
 
             const startAnimation = () => {
                 setShowStartButton(false);
+            };
+
+            const skipToTimeline = () => {
+                // Kompletter Skip - direkt zur Timeline ohne Intro
+                setIsSkipped(true); // Skip-Flag setzen
+                setShowStartButton(false);
+                setShowTerminalLoading(false);
+                setShowFullAugustus(false);
+                setShowIntroPhase(false);
+                setIntroText(''); // Intro-Text komplett löschen
+                setIntroComplete(true);
+                setZoomToFace(true);
+                setShowTimeline(true);
+                setTypedCommand('./historia_romana.exe');
+                
+                // Alle Jahre sofort anzeigen, aber auf letzten Button setzen
+                setYearsShown(timeline.map(item => item.year));
+                setCurrentStep(timeline.length - 1); // Letzter Button aktiv (Osmanen)
+                setCurrentText(''); // KEIN Text beim Skip - Speech bubble bleibt weg
+                setIsTimelineComplete(true); // Timeline als komplett markieren für Klickbarkeit
             };
 
             const jumpToStep = (stepIndex) => {
@@ -491,8 +541,13 @@
                     React.createElement('button', {
                         key: 'startBtn',
                         onClick: startAnimation,
-                        className: "bg-green-600 text-black px-8 py-4 rounded-lg hover:bg-green-500 transition-colors font-bold text-xl shadow-lg border-2 border-green-400 uppercase tracking-wider"
-                    }, 'Historia Romana Starten')
+                        className: "bg-green-600 text-black px-8 py-4 rounded-lg hover:bg-green-500 transition-colors font-bold text-xl shadow-lg border-2 border-green-400 uppercase tracking-wider mb-4"
+                    }, 'Historia Romana Starten'),
+                    React.createElement('button', {
+                        key: 'skipBtn',
+                        onClick: skipToTimeline,
+                        className: "text-yellow-400 text-white px-6 py-3 rounded-lg hover:bg-gray-500 transition-colors font-bold text-lg shadow-lg border-2 border-gray-400 uppercase tracking-wider"
+                    }, 'Animation überspringen')
                 ]),
 
                 // Header (nur zeigen wenn nicht Start-Screen)
@@ -510,23 +565,25 @@
                     ])
                 ),
 
-                // Console Bar (nur zeigen wenn Terminal läuft oder Timeline aktiv)
-                !showStartButton && (showTerminalLoading || showTimeline) && React.createElement('div', {
+                // Console Bar (immer zeigen wenn nicht Start-Screen)
+                !showStartButton && React.createElement('div', {
                     key: 'consoleBar',
                     className: "console-bar absolute bottom-0 left-0 right-0 h-40 sm:h-48 bg-black border-t-2 border-green-600 z-30"
                 }, [
 
-                    showTimeline && React.createElement('div', {
+                    // Timeline Years Container (immer da, aber nur sichtbar wenn Timeline aktiv)
+                    React.createElement('div', {
                         key: 'timelineYears',
                         'data-timeline': 'years',
-                        className: "timeline-years flex items-start justify-start h-28 sm:h-32 px-2 sm:px-4 space-x-3 sm:space-x-6 z-40 relative pt-3 sm:pt-6 mb-1 sm:mb-2",
+                        className: `timeline-years flex items-start justify-start h-28 sm:h-32 px-2 sm:px-4 space-x-3 sm:space-x-6 z-40 relative pt-3 sm:pt-6 mb-1 sm:mb-2 ${!showTimeline ? 'opacity-0' : 'opacity-100'}`,
                         style: {
                             overflowX: 'auto',
                             scrollBehavior: 'smooth',
-                            whiteSpace: 'nowrap'
+                            whiteSpace: 'nowrap',
+                            transition: 'opacity 0.5s ease'
                         }
                     },
-                        yearsShown.map((year, index) =>
+                        showTimeline ? yearsShown.map((year, index) =>
                             React.createElement('button', {
                                 key: index,
                                 onClick: () => jumpToStep(index),
@@ -547,10 +604,11 @@
                                     className: `text-cyan-300 text-xs sm:text-sm font-medium ${index === currentStep ? 'text-cyan-200' : 'text-cyan-300'}`
                                 }, timeline[index]?.keyword || '')
                             ])
-                        )
+                        ) : []
                     ),
 
 
+                    // Prompt (immer da)
                     React.createElement('div', {
                         key: 'prompt',
                         className: "absolute bottom-1 sm:bottom-2 left-2 sm:left-4 right-2 sm:right-4 z-40"
@@ -566,7 +624,7 @@
                                 key: 'status',
                                 className: "ml-1 sm:ml-2 text-green-400"
                             }, [
-
+                                // Zeige verschiedene Status je nach Phase
                                 showTerminalLoading ? [
                                     typedCommand,
                                     showCursor && React.createElement('span', {
@@ -579,6 +637,12 @@
                                         key: 'cursor2',
                                         className: "text-yellow-400"
                                     }, '▋')
+                                ] : showFullAugustus ? [
+                                    'Initializing...',
+                                    showCursor && React.createElement('span', {
+                                        key: 'cursor3',
+                                        className: "text-yellow-400"
+                                    }, '▋')
                                 ] : null
                             ])
                         ])
@@ -586,14 +650,20 @@
                 ]),
 
 
-                // Augustus Animation (nur zeigen wenn nicht Start-Screen)
-                !showStartButton && showFullAugustus && React.createElement('div', {
-                    key: 'fullAugustus',
-                    className: "absolute top-8 left-0 right-0 bottom-40 sm:bottom-48 flex items-center justify-center px-2"
+                // Augustus Container (immer da wenn nicht Start-Screen, aber verschiedene Zustände)
+                !showStartButton && React.createElement('div', {
+                    key: 'augustusContainer',
+                    className: "absolute top-8 left-0 right-0 bottom-40 sm:bottom-48 flex items-center justify-center px-2 augustus-container"
                 },
                     React.createElement('div', {
-                        className: `transition-all duration-3000 ease-out ${zoomToFace ? 'transform scale-75 sm:scale-150 translate-y-8 sm:translate-y-16' : 'transform scale-50 sm:scale-100'
-                            }`
+                        className: `augustus-container ${
+                            showTimeline || zoomToFace ? 'transform scale-75 sm:scale-150 translate-y-8 sm:translate-y-16' : 
+                            showFullAugustus ? 'transform scale-50 sm:scale-100' :
+                            'transform scale-50 sm:scale-100 opacity-0'
+                        }`,
+                        style: {
+                            transition: 'none' // Komplett deaktivieren für Chromium
+                        }
                     },
                         React.createElement('pre', {
                             className: "augustus-ascii text-amber-400 whitespace-pre overflow-hidden"
@@ -601,8 +671,8 @@
                     )
                 ),
 
-                // Speech bubble - zeigt Intro oder Timeline Text (während Augustus Animation oder Timeline)
-                !showStartButton && (introText || currentText) && React.createElement('div', {
+                // Speech bubble - nur zeigen wenn Intro-Phase ODER Timeline mit Text
+                !showStartButton && ((showIntroPhase && introText) || (showTimeline && currentText)) && React.createElement('div', {
                     key: 'speech',
                     className: "absolute left-1/2 top-1/4 transform -translate-x-1/2 z-50"
                 },
@@ -623,24 +693,6 @@
                         }, showIntroPhase ? introText : currentText)
                     ])
                 ),
-
-
-                // Timeline Phase (nur zeigen wenn nicht Start-Screen)
-                !showStartButton && showTimeline && [
-
-                    React.createElement('div', {
-                        key: 'zoomedAugustus',
-                        className: "absolute top-8 left-0 right-0 bottom-40 sm:bottom-48 flex items-center justify-center px-2"
-                    },
-                        React.createElement('div', {
-                            className: "transform scale-75 sm:scale-150 translate-y-8 sm:translate-y-16"
-                        },
-                            React.createElement('pre', {
-                                className: "augustus-ascii text-amber-400 whitespace-pre overflow-hidden"
-                            }, augustusFullAscii)
-                        )
-                    )
-                ],
 
 
                 // Restart Button (nur zeigen wenn Timeline fertig und nicht Start-Screen)
